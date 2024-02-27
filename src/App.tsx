@@ -8,12 +8,19 @@ function App() {
   // const [operator, setOperator] = useState<string>();
   const [formula, setFormula] = useState<string[]>([]);
   const [justOped, setJustOped] = useState<boolean>(false);
+  const [afterEqual, setAfterEqual] = useState<boolean>(false);
 
   function updateDisplay(input: string) {
-    setDisplay(justOped ? input : [display.split(","), input].join(""))
+    input = (display.length === 0 || justOped) && input === "." ? "0." : input;
     setJustOped(false);
+    setDisplay(justOped ? input : [display.split(","), input].join(""))
     console.log("Display", display, input);
   }
+
+  function handlePositive() {
+    setDisplay(display[0] === "-" ? display.substring(1) : ["-", display].join(""));
+  }
+
   function reset() {
     setDisplay("");
     if (!justOped) {
@@ -24,20 +31,14 @@ function App() {
   }
 
   function handleOperator(operator: string) {
-    // if (oped) {
-    //   formula?.pop();
-    // }
-    // setOped(true);
-    // setFormula([parseFloat(display).toString(), operator]);
+    console.log("ABC", justOped, operator, [...formula.map((v, i) => { return i === formula.length - 1 ? operator : v })])
+    const tempFormula: string[] = justOped ? [...formula.map((v, i) => { return i === formula.length - 1 ? operator : v })] : afterEqual ? [...formula, operator] : [...formula, parseFloat(display).toString(), operator];
+    setAfterEqual(false);
     setJustOped(true);
-    if (formula.length > 2) {
-      setFormula([parseFloat(display).toString(), operator, formula[2]]);
-    } else {
-      setFormula([parseFloat(display).toString(), operator]);
-    }
+    setFormula(tempFormula);
   }
 
-  function handleChnage(event: ChangeEvent) {
+  function handleChange(event: ChangeEvent) {
     const { value } = event.target as HTMLInputElement
     setDisplay(value);
     console.log("EVENT", value);
@@ -52,20 +53,73 @@ function App() {
     setFormula([...formula, cal.toString()]);
   }
 
-  function handleEqual(): void {
-    const ans: string = (Math.round(handleProcess() * 100) / 100).toString();
-    setDisplay(ans);
-    const tempFormula = formula.map((data, i) => { return i === 0 ? ans : data });
-    setFormula([...tempFormula]);
+  function handleEqual() {
+    // const ans: string = (Math.round(handleProcess() * 100) / 100).toString();
+    // setDisplay(ans);
+    // const tempFormula = formula.map((data, i) => { return i === 0 ? ans : data });
+    // setFormula([...tempFormula]);
+
+    // setFormula([...formula,display])
+
+    var tempFormula: string[] = justOped ? formula : [...formula, display];
+
+    while (tempFormula.includes("*") || tempFormula.includes("/")) {
+      // const newFormula = await catchMD(tempFormula);
+      tempFormula = catchMD(tempFormula);
+      console.log("While formula", tempFormula);
+    };
+
+    while (tempFormula.length > 1) {
+      tempFormula = handlePM(tempFormula);
+      console.log("Plus formula", tempFormula);
+    };
+
+    setFormula(tempFormula);
+    setDisplay((Math.round(parseFloat(tempFormula[0]) * 100) / 100).toString());
+    setAfterEqual(true);
+
 
   }
-  function handleProcess(): number {
-    const a: number = parseFloat(formula[0]);
-    const b: number = parseFloat(justOped ? formula[2] : display);
-    switch (formula[1]) {
+
+  function catchMD(tFormula: string[]): string[] {
+    // console.log("AAAAA", tFormula.indexOf("*"));
+    const mIndex: number = tFormula.indexOf("*");
+    const dIndex: number = tFormula.indexOf("/");
+
+    const oIndex: number | null = (mIndex < 0 && dIndex < 0) ? null : mIndex < 0 ? dIndex : dIndex < 0 ? mIndex : (mIndex < dIndex) ? mIndex : dIndex;
+    console.log("Index", oIndex, mIndex, dIndex)
+    if (oIndex != null) {
+      // const ans: number = handleProcess(parseFloat(tFormula[oIndex - 1]), parseFloat(tFormula[oIndex + 1]), tFormula[oIndex]);
+      // console.log("Ans", ans)
+      // // add ans to replace the cal
+      // // var newFormula = tFormula.map((v, i) => { return i === oIndex ? ans.toString() : v });
+      // // newFormula = newFormula.filter((v, i) => { return !(i === oIndex - 1 || i === oIndex + 1) });
+      // tFormula = tFormula.map((v, i) => { return i === oIndex ? ans.toString() : v });
+      // tFormula = tFormula.filter((v, i) => { return !(i === oIndex - 1 || i === oIndex + 1) });
+      tFormula = replaceAns(tFormula, oIndex);
+    }
+    console.log("tFormula", tFormula);
+    return tFormula
+  }
+
+  function handlePM(tFormula: string[]): string[] {
+    tFormula = replaceAns(tFormula, 1);
+    return tFormula;
+  }
+
+  function replaceAns(tFormula: string[], oIndex: number) {
+    const ans: number = handleProcess(parseFloat(tFormula[oIndex - 1]), parseFloat(tFormula[oIndex + 1]), tFormula[oIndex]);
+    console.log("Ans", ans)
+    // add ans to replace the cal
+    tFormula = tFormula.map((v, i) => { return i === oIndex ? ans.toString() : v });
+    tFormula = tFormula.filter((v, i) => { return !(i === oIndex - 1 || i === oIndex + 1) });
+    return tFormula;
+  }
+
+  function handleProcess(a: number, b: number, operator: string): number {
+    switch (operator) {
       case "+":
         return a + b;
-
       case "-":
         return a - b;
       case "*":
@@ -73,7 +127,8 @@ function App() {
       case "/":
         return a / b;
       default:
-        return 12345678;
+        console.log("ERROR")
+        return 1234567890;
     }
   }
   return (
@@ -83,10 +138,10 @@ function App() {
       </h1>
       <div className='flex justify-center content-center'>
         <div key="bg" className='bg-slate-800 rounded p-4 flex flex-col'>
-          <input type="text" className='rounded grow text-4xl text-end remove-arrow px-2 py-3' value={display} onChange={(e) => handleChnage(e)} readOnly />
+          <input type="text" className='rounded grow text-4xl text-end remove-arrow px-2 py-3' value={display} onChange={(e) => handleChange(e)} readOnly />
           <div className='grid grid-cols-4 grid-flow-row gap-2 my-4'>
             <CustomBtn label={display.length < 1 ? "AC" : "C"} classes='' onClick={() => reset()} />
-            <CustomBtn label="±" onClick={() => console.log("Clicked")} />
+            <CustomBtn label="±" onClick={() => handlePositive()} />
             <CustomBtn label="%" onClick={() => handlePercent(formula.length !== 0, parseFloat(formula.length !== 0 ? formula[0] : display))} />
             <CustomBtn label="÷" onClick={() => handleOperator("/")} />
             <CustomBtn label="7" onClick={() => updateDisplay("7")} />
