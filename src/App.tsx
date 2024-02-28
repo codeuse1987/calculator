@@ -13,17 +13,21 @@ function App() {
   function updateDisplay(input: string) {
     input = (display.length === 0 || justOped) && input === "." ? "0." : input;
     setJustOped(false);
-    setDisplay(justOped ? input : [display.split(","), input].join(""))
+    // if just added operator or previos display === 0, then update display with input, else add the digit to previous display
+    setDisplay(justOped || (display.length === 1 && parseFloat(display) === 0) ? input : [display.split(","), input].join(""))
     console.log("Display", display, input);
   }
 
   function handlePositive() {
     setDisplay(display[0] === "-" ? display.substring(1) : ["-", display].join(""));
   }
+  function checkOperator(): boolean {
+    return !(formula[formula.length - 1] === "+" || formula[formula.length - 1] === "-" || formula[formula.length - 1] === "*" || formula[formula.length - 1] === "/");
+  }
 
   function reset() {
-    setDisplay("");
-    if (!justOped) {
+    setDisplay("0");
+    if (checkOperator()) {
       setFormula([]);
       setJustOped(false);
     }
@@ -44,25 +48,15 @@ function App() {
     console.log("EVENT", value);
   }
 
-  function handlePercent(formed: boolean, source: number) {
-    // const formed: boolean = 
-    console.log("SSSS", formed, formula, display, source);
-    const cal: number = (formed && (formula[1] === "-" || formula[1] === "+")) ? source * (source / 100) : source / 100;
-    setDisplay(cal.toString())
-    // const tempFormula = formula.map((data, i) => { return i === 0 ? cal.toString() : data });
+  function handlePercent() {
+    var source: string = justOped ? calculation(formula.filter((v, i) => { return i !== formula.length - 1 }))[0] : display;
+    const cal: number = (formula[formula.length - 1] === "-" || formula[formula.length - 1] === "+") ? parseFloat(source) * (parseFloat(source) / 100) : parseFloat(source) / 100;
     setFormula([...formula, cal.toString()]);
+    console.log("FFFF", formula);
+    setDisplay(cal.toString());
   }
 
-  function handleEqual() {
-    // const ans: string = (Math.round(handleProcess() * 100) / 100).toString();
-    // setDisplay(ans);
-    // const tempFormula = formula.map((data, i) => { return i === 0 ? ans : data });
-    // setFormula([...tempFormula]);
-
-    // setFormula([...formula,display])
-
-    var tempFormula: string[] = justOped ? formula : [...formula, display];
-
+  function calculation(tempFormula: string[]): string[] {
     while (tempFormula.includes("*") || tempFormula.includes("/")) {
       // const newFormula = await catchMD(tempFormula);
       tempFormula = catchMD(tempFormula);
@@ -73,11 +67,26 @@ function App() {
       tempFormula = handlePM(tempFormula);
       console.log("Plus formula", tempFormula);
     };
+    return tempFormula;
+  }
+  function handleEqual() {
+    var tempFormula: string[] = justOped ? formula : [...formula, display];
 
+    // while (tempFormula.includes("*") || tempFormula.includes("/")) {
+    //   // const newFormula = await catchMD(tempFormula);
+    //   tempFormula = catchMD(tempFormula);
+    //   console.log("While formula", tempFormula);
+    // };
+
+    // while (tempFormula.length > 1) {
+    //   tempFormula = handlePM(tempFormula);
+    //   console.log("Plus formula", tempFormula);
+    // };
+    tempFormula = calculation(tempFormula);
     setFormula(tempFormula);
     setDisplay((Math.round(parseFloat(tempFormula[0]) * 100) / 100).toString());
     setAfterEqual(true);
-
+    return tempFormula
 
   }
 
@@ -140,9 +149,10 @@ function App() {
         <div key="bg" className='bg-slate-800 rounded p-4 flex flex-col'>
           <input type="text" className='rounded grow text-4xl text-end remove-arrow px-2 py-3' value={display} onChange={(e) => handleChange(e)} readOnly />
           <div className='grid grid-cols-4 grid-flow-row gap-2 my-4'>
-            <CustomBtn label={display.length < 1 ? "AC" : "C"} classes='' onClick={() => reset()} />
+            <CustomBtn label={display.length === 1 && parseFloat(display) === 0 ? "AC" : "C"} classes='' onClick={() => reset()} />
             <CustomBtn label="±" onClick={() => handlePositive()} />
-            <CustomBtn label="%" onClick={() => handlePercent(formula.length !== 0, parseFloat(formula.length !== 0 ? formula[0] : display))} />
+            {/* <CustomBtn label="%" onClick={() => handlePercent(formula.length !== 0, parseFloat(formula.length !== 0 ? formula[0] : display))} /> */}
+            <CustomBtn label="%" onClick={() => handlePercent()} />
             <CustomBtn label="÷" onClick={() => handleOperator("/")} />
             <CustomBtn label="7" onClick={() => updateDisplay("7")} />
             <CustomBtn label="8" onClick={() => updateDisplay("8")} />
