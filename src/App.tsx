@@ -48,7 +48,7 @@ function App() {
 
   function handlePercent() {
     // identify the percentage is for inputed digit or the formula 
-    var source: string = justOped ? calculation(formula.filter((v, i) => { return i !== formula.length - 1 }))[0] : display;
+    var source: string = justOped ? calculation(formula.filter((_v, i) => { return i !== formula.length - 1  }))[0] : display;
     const cal: number = (formula[formula.length - 1] === "-" || formula[formula.length - 1] === "+") ? parseFloat(source) * (parseFloat(source) / 100) : parseFloat(source) / 100;
     setFormula([...formula, cal.toString()]);
     setDisplay(cal.toString());
@@ -96,7 +96,7 @@ function App() {
     const ans: number = handleProcess(parseFloat(tFormula[oIndex - 1]), parseFloat(tFormula[oIndex + 1]), tFormula[oIndex]);
     // add ans to replace the cal
     tFormula = tFormula.map((v, i) => { return i === oIndex ? ans.toString() : v });
-    tFormula = tFormula.filter((v, i) => { return !(i === oIndex - 1 || i === oIndex + 1) });
+    tFormula = tFormula.filter((_v, i) => { return !(i === oIndex - 1 || i === oIndex + 1) });
     return tFormula;
   }
 
